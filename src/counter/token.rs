@@ -1,10 +1,11 @@
-/// This source is copied from master branch on https://github.com/openai/tiktoken/
+/// This source is copied from lib.rs of master branch on https://github.com/openai/tiktoken/
 /// at April 7, 2024, following the MIT license of the original project.
 /// (The exact file is https://github.com/openai/tiktoken/blob/main/src/lib.rs)
 ///
 /// Please note this source file was edited by this(langcat) project
 /// so some parts doesn't match the original library.
-/// YOU MUST NEVER COMPLAIN ANYTHING OF LOSS BY THIS CODE TO THE ORIGINAL SOURCE AUTHOR.
+///
+/// The original license is here: https://github.com/openai/tiktoken/blob/main/LICENSE
 
 use std::collections::HashSet;
 use std::num::NonZeroU64;
