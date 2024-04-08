@@ -133,13 +133,13 @@ impl <'a> TokenEncoding<'a> {
         Ok(self.core_bpe.encode_with_unstable(text, allowed_special))
     }
 
-    pub fn encode_single_token(self, text_or_bytes: SingleToken) -> u32 {
+    pub fn encode_single_token(self, text_or_bytes: SingleToken) -> CounterResult<u32> {
         match text_or_bytes {
             SingleToken::String(str) => {
                 let bytes = str.as_bytes();
-                self.core_bpe.encode_single_token(bytes)?
+                self.core_bpe.encode_single_token(bytes)
             },
-            SingleToken::Bytes(byte) => self.core_bpe.encode_single_token(&byte)?,
+            SingleToken::Bytes(byte) => self.core_bpe.encode_single_token(&byte),
         }
     }
 
