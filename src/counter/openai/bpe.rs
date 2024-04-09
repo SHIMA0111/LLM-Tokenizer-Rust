@@ -56,7 +56,7 @@ fn byte_pair_encode(piece: &[u8], ranks: &HashMap<Vec<u8>, Rank>) -> Vec<Rank> {
     assert!(piece.len() > 1);
     byte_pair_merge(&ranks, piece)
         .windows(2)
-        .map(|part| ranks[part[0].0..part[1].0])
+        .map(|part| ranks[&piece[part[0].0..part[1].0]])
         .collect()
 }
 
@@ -68,7 +68,7 @@ fn byte_pair_split<'a>(piece: &'a [u8], ranks: &HashMap<Vec<u8>, Rank>) -> Vec<&
         .collect()
 }
 
-pub(super) struct CoreBytePairEncoding {
+pub(crate) struct CoreBytePairEncoding {
     encoder: HashMap<Vec<u8>, Rank>,
     special_tokens_encoder: HashMap<String, Rank>,
     decoder: HashMap<Rank, Vec<u8>>,
@@ -79,7 +79,7 @@ pub(super) struct CoreBytePairEncoding {
 }
 
 impl CoreBytePairEncoding {
-    pub(super) fn new(encoder: HashMap<Vec<u8>, Rank>,
+    pub(crate) fn new(encoder: HashMap<Vec<u8>, Rank>,
            special_tokens_encoder: HashMap<String, Rank>,
            pattern: &str
     ) -> CounterResult<Self> {

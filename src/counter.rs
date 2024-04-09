@@ -4,6 +4,8 @@ use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use rustc_hash::FxHashMap;
 use rayon::prelude::*;
+use regex::Regex;
+use crate::counter::openai::bpe::CoreBytePairEncoding;
 use crate::errors::{CounterError, CounterResult};
 
 mod openai;
@@ -14,7 +16,7 @@ struct TokenEncoding<'a> {
     mergeable_ranks: FxHashMap<Vec<u8>, u32>,
     special_tokens: FxHashMap<String, u32>,
     max_token_value: u32,
-    core_bpe: Arc<CoreB>,
+    core_bpe: Arc<CoreBytePairEncoding>,
 }
 
 #[derive(Clone, PartialEq)]
@@ -58,7 +60,7 @@ impl <'a> TokenEncoding<'a> {
         }
 
         let core_bpe = 
-            CoreBPE::new(fx_margeable_ranks.clone(), 
+            CoreBytePairEncoding::new(fx_margeable_ranks.clone(),
                          fx_special_token.clone(), 
                          pat_str)?;
 
@@ -77,7 +79,7 @@ impl <'a> TokenEncoding<'a> {
     // ================
 
     pub fn encode_ordinary(&self, text: &str) -> Vec<u32> {
-        self.encode_ordinary(text)
+        todo!()
     }
 
     pub fn encode(&self,
@@ -85,16 +87,11 @@ impl <'a> TokenEncoding<'a> {
                   allowed_special: Specials,
                   disallowed_special: Specials
     ) -> CounterResult<Vec<u32>> {
-        let allowed_special =
-            self.parse_input_values(text, allowed_special, disallowed_special)?;
-
-        Ok(self.core_bpe.encode(text, allowed_special))
+        todo!()
     }
 
     pub fn encode_ordinary_batch(&self, text: &[&str]) -> Vec<Vec<u32>> {
-        text.par_iter()
-            .map(|str| self.encode_ordinary(str))
-            .collect()
+        todo!()
     }
 
     pub fn encode_batch(&self,
@@ -102,20 +99,7 @@ impl <'a> TokenEncoding<'a> {
                         allowed_special: Specials,
                         disallowed_special: Specials
     ) -> CounterResult<Vec<Vec<u32>>> {
-        let outputs = text.par_iter()
-            .map(|str| self.encode(str, allowed_special.clone(), disallowed_special.clone()))
-            .collect::<Vec<CounterResult<Vec<u32>>>>();
-
-        let mut out_vec = Vec::new();
-
-        for output in outputs {
-            match output {
-                Ok(vec) => out_vec.push(vec),
-                Err(e) => return Err(e),
-            }
-        }
-
-        Ok(out_vec)
+        todo!()
     }
 
     pub fn encode_with_unstable(&self,
@@ -123,20 +107,11 @@ impl <'a> TokenEncoding<'a> {
                                 allowed_special: Specials,
                                 disallowed_special: Specials
     ) -> CounterResult<(Vec<u32>, Vec<Vec<u32>>)> {
-        let allowed_special =
-            self.parse_input_values(text, allowed_special, disallowed_special)?;
-
-        Ok(self.core_bpe.encode_with_unstable(text, allowed_special))
+        todo!()
     }
 
     pub fn encode_single_token(self, text_or_bytes: SingleToken) -> u32 {
-        match text_or_bytes {
-            SingleToken::String(str) => {
-                let bytes = str.as_bytes();
-                self.core_bpe.encode_single_token(bytes)?
-            },
-            SingleToken::Bytes(byte) => self.core_bpe.encode_single_token(&byte)?,
-        }
+        todo!()
     }
 
     // ===========
@@ -144,12 +119,11 @@ impl <'a> TokenEncoding<'a> {
     // ===========
 
     pub fn special_tokens_set(&self) -> HashSet<String> {
-        self.special_tokens.keys().into_iter().map(|token| token.to_owned()).collect::<HashSet<String>>()
+        todo!()
     }
 
     fn special_token_regex(tokens: HashSet<String>) -> Regex {
-        let inner = tokens.iter().map(|token| regex::escape(token)).collect::<Vec<String>>().join("|");
-        Regex::new(&inner).unwrap()
+        todo!()
     }
 
     fn parse_input_values(&self,
@@ -157,32 +131,7 @@ impl <'a> TokenEncoding<'a> {
                           allowed_special: Specials,
                           disallowed_special: Specials
     ) -> CounterResult<HashSet<String>> {
-        let allowed_special = match allowed_special {
-            Specials::All => self.special_tokens_set(),
-            Specials::Collection(vec) => vec.iter().map(|str| str.to_string()).collect::<HashSet<String>>(),
-        };
-        let disallowed_special = match disallowed_special {
-            Specials::All => self.special_tokens_set().difference(&allowed_special).cloned().collect::<HashSet<_>>(),
-            Specials::Collection(vec) => vec.iter().map(|str| str.to_string()).collect::<HashSet<String>>(),
-        };
-
-        if !disallowed_special.is_empty() {
-            if let Ok(match_res) = Self::special_token_regex(disallowed_special.clone()).find(text) {
-                if let Some(matches) = match_res {
-                    return Err(CounterError::ValueError(format!(
-                        "Encountered text corresponding to disallowed special token {}.\n \
-                        If you want this text to be encoded as a special token, \
-                        pass it to `allowed_special`, e.g. `Collection(vec![{}, ...])` as allowed_special.\n \
-                        If you want this text to be encoded as normal text, pass \
-                        `special_tokens_set.remove({})`.\n \
-                        To disable this check for all special tokens, pass `Collection(Vec::new())` as disabled_special. \n",
-                        matches.as_str(), matches.as_str(), matches.as_str()
-                    )))
-                }
-            }
-        }
-
-        Ok(allowed_special)
+        todo!()
     }
 }
 
