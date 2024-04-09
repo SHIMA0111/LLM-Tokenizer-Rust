@@ -110,7 +110,7 @@ impl <'a> TokenEncoding<'a> {
         todo!()
     }
 
-    pub fn encode_single_token(self, text_or_bytes: SingleToken) -> u32 {
+    pub fn encode_single_token(self, text_or_bytes: SingleToken) -> CounterResult<u32> {
         todo!()
     }
 
