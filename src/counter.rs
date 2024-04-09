@@ -2,15 +2,11 @@ use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
-use fancy_regex::Regex;
 use rustc_hash::FxHashMap;
 use rayon::prelude::*;
-use crate::counter::token::CoreBPE;
 use crate::errors::{CounterError, CounterResult};
 
-mod token;
-mod models;
-mod load;
+mod openai;
 
 struct TokenEncoding<'a> {
     name: &'a str,
@@ -18,7 +14,7 @@ struct TokenEncoding<'a> {
     mergeable_ranks: FxHashMap<Vec<u8>, u32>,
     special_tokens: FxHashMap<String, u32>,
     max_token_value: u32,
-    core_bpe: Arc<CoreBPE>,
+    core_bpe: Arc<CoreB>,
 }
 
 #[derive(Clone, PartialEq)]

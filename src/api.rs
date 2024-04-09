@@ -1,2 +1,2 @@
 mod gemini;
-mod gpt;
+mod openai;
