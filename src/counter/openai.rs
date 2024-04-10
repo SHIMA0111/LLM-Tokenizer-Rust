@@ -1,5 +1,6 @@
 use std::cmp::max;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use regex::Regex;
 use rustc_hash::FxHashMap;
 use crate::counter::openai::bpe::CoreBytePairEncoding;
 use crate::errors::{CounterError, CounterResult};
@@ -78,6 +79,109 @@ impl <'a> OpenAI<'a> {
     // ===========
 
     pub fn encode_ordinary(&self, text: &str) -> Vec<u32> {
-        todo!()
+        self.bpe_base.encode_ordinary(text)
     }
+
+    pub fn encode(&self,
+                  text: &str,
+                  allowed_special: Specials,
+                  disallowed_special: Specials
+    ) -> CounterResult<Vec<u32>> {
+        let allowed_special = match allowed_special {
+            Specials::All => self.special_tokens_set(),
+            Specials::Collection(allowed_specials) => {
+                allowed_specials
+                    .iter()
+                    .map(|special| *special)
+                    .collect::<HashSet<_>>()
+            }
+        };
+
+        let disallowed_special = match disallowed_special {
+            Specials::All => {
+                self.special_tokens_set()
+                    .difference(&allowed_special)
+                    .cloned()
+                    .collect::<HashSet<_>>()
+            }
+            Specials::Collection(disallowed_specials) => {
+                disallowed_specials
+                    .iter()
+                    .map(|special| *special)
+                    .collect::<HashSet<_>>()
+            }
+        };
+
+        if !disallowed_special.is_empty() {
+            let regex = special_token_regex(disallowed_special)?;
+            if let Some(match_value) = regex.find(text) {
+                return Err(
+                    CounterError::ValueError(
+                        format!(
+                            "Encountered text corresponding to disallowed special token {}.\n \
+                                    If you want this text to be encoded as a special token, \
+                                    pass the token as 'allowed_special'. \
+                                    If you want to encode this as normal text, \
+                                    disable the check for this token by passing \
+                                    a disallowed specials set removing this token. \
+                                    To disable this check for all tokens, \
+                                    `Specials::Collection(&Vec::new())` as `disallowed_special`",
+                            match_value.as_str()
+                        )
+                    ))
+            }
+        }
+
+        Ok(self.bpe_base.encode(text, allowed_special))
+    }
+
+    pub fn encode_ordinary_batch(&self, text: &[&str]) -> Vec<Vec<u32>> {
+        text.iter().map(|str| self.bpe_base.encode_ordinary(str)).collect::<Vec<_>>()
+    }
+
+    pub fn encode_batch(&self,
+                        text: &[&str],
+                        allowed_special: Specials,
+                        disallowed_special: Specials
+    ) -> CounterResult<Vec<Vec<u32>>> {
+        let mut tokens = Vec::new();
+        for str in text {
+            tokens.push(
+                self.encode(str, allowed_special.clone(), disallowed_special.clone())?);
+        }
+
+        Ok(tokens)
+    }
+
+    // ===================
+    // Miscellaneous
+    // ===================
+
+    /// Returns the list of all token byte values.
+    pub fn token_bytes_values(&self) -> Vec<Vec<u8>> {
+        self.bpe_base.token_byte_values()
+    }
+
+    pub fn end_of_text_token(&self) -> u32 {
+        self.special_token["<|endoftext|>"]
+    }
+
+    pub fn special_tokens_set(&self) -> HashSet<&str> {
+        self.special_token.keys().map(|key| key.as_str()).collect::<HashSet<_>>()
+    }
+
+    /// For backwards compatibility.
+    pub fn n_vocab(&self) -> u32 {
+        self.max_token_value + 1
+    }
+}
+
+fn special_token_regex(tokens: HashSet<&str>) -> CounterResult<Regex> {
+    let regex_text = tokens
+        .iter()
+        .map(|token| token.to_string())
+        .collect::<Vec<_>>()
+        .join("|");
+
+    Regex::new(regex_text.as_str()).map_err(|e| CounterError::RegexError(e.to_string()))
 }

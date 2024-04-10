@@ -204,6 +204,32 @@ impl CoreBytePairEncoding {
     // Decoding
     // =========
 
+    pub(crate) fn decode_bytes(&self, tokens: Vec<Rank>) -> Vec<u8> {
+        self.decode_native(&tokens)
+    }
+
+    pub(crate) fn decode_single_token_bytes(&self, token: Rank) -> CounterResult<Vec<u8>> {
+        if let Some(bytes) = self.decoder.get(&token) {
+            return Ok(bytes.to_owned())
+        }
+        if let Some(bytes) = self.special_tokens_decoder.get(&token) {
+            return Ok(bytes.to_owned())
+        }
+
+        Err(CounterError::KeyError(token.to_string()))
+    }
+
+    // ===============
+    // Miscellaneous
+    // ===============
+
+    pub(crate) fn token_byte_values(&self) -> Vec<Vec<u8>> {
+        self.sorted_token_bytes
+            .iter()
+            .map(|x| x.to_vec())
+            .collect::<Vec<Vec<_>>>()
+    }
+
     // =========
     // Internal
     // =========
