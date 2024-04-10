@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::str::from_utf8;
+use std::str::{from_utf8, from_utf8_unchecked};
 use regex::Regex;
 use rustc_hash::FxHashMap as HashMap;
 use crate::errors::{CounterError, CounterResult};
@@ -125,6 +125,88 @@ impl CoreBytePairEncoding {
             sorted_token_bytes,
         })
     }
+
+    // =========
+    // Encoding
+    // =========
+
+    pub(crate) fn encode_ordinary(&self, text: &str) -> Vec<Rank> {
+        self.encode_ordinary_native(text)
+    }
+
+    pub(crate) fn encode(&self, text: &str, allowed_special: HashSet<&str>) -> Vec<Rank> {
+        self.encode_native(text, &allowed_special).0
+    }
+
+    fn encode_bytes(&self, bytes: &[u8]) -> Vec<Rank> {
+        match from_utf8(bytes) {
+            Ok(text) => self.encode_ordinary_native(text),
+            Err(e) => {
+                let text = unsafe {from_utf8_unchecked(&bytes[..e.valid_up_to()])};
+                let (tokens, last_piece_token_len) =
+                    self.encode_native(text, &HashSet::new());
+                let (mut tokens, last_piece_token_len) =
+                    self.increase_last_piece_token_len(tokens, last_piece_token_len);
+
+                if !tokens.is_empty() && last_piece_token_len > 0 {
+                    // This method can't say correct when niche case that regex split
+                    // the valid UTF-8 and the invalid bytes. So this method should be private.
+                    let mut unstable_bytes = self.decode_native(&tokens[tokens.len() - last_piece_token_len..]);
+                    unstable_bytes.extend_from_slice(&bytes[e.valid_up_to()..]);
+
+                    tokens.truncate(tokens.len() - last_piece_token_len);
+                    match self.encoder.get(&unstable_bytes) {
+                        Some(token) => tokens.push(*token),
+                        None => tokens.extend(&byte_pair_encode(&unstable_bytes, &self.encoder)),
+                    }
+                }
+                tokens
+
+            }
+        }
+    }
+
+    pub(crate) fn encode_with_unstable(&self,
+                                       text: &str,
+                                       allowed_special: HashSet<&str>
+    ) -> (Vec<Rank>, Vec<Vec<Rank>>) {
+        let (tokens, completions) =
+            self.encode_unstable_native(text, &allowed_special);
+
+        let completions = completions.iter().cloned().collect::<Vec<Vec<_>>>();
+
+        (tokens, completions)
+    }
+
+    pub(crate) fn encode_single_token(&self, piece: &[u8]) -> CounterResult<u32> {
+        if let Some(token) = self.encoder.get(piece) {
+            return Ok(*token)
+        }
+        if let Ok(special_str) = from_utf8(piece) {
+            if let Some(special_token) = self.special_tokens_encoder.get(special_str) {
+                return Ok(*special_token)
+            }
+        }
+
+        Err(CounterError::KeyError(format!("{:?}", piece)))
+    }
+
+    pub(crate) fn encode_single_piece(&self, piece: &[u8]) -> Vec<Rank> {
+        if let Some(token) = self.encoder.get(piece) {
+            vec![*token]
+        }
+        else {
+            byte_pair_encode(piece, &self.encoder)
+        }
+    }
+
+    // =========
+    // Decoding
+    // =========
+
+    // =========
+    // Internal
+    // =========
 
     fn decode_native(&self, tokens: &[Rank]) -> Vec<u8> {
         let mut ret = Vec::with_capacity(tokens.len() * 2);

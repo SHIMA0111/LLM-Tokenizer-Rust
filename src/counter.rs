@@ -6,9 +6,13 @@ use rustc_hash::FxHashMap;
 use rayon::prelude::*;
 use regex::Regex;
 use crate::counter::openai::bpe::CoreBytePairEncoding;
-use crate::errors::{CounterError, CounterResult};
+use crate::errors::CounterResult;
 
 mod openai;
+
+pub trait Counter {
+    fn count(&self) -> usize;
+}
 
 struct TokenEncoding<'a> {
     name: &'a str,
