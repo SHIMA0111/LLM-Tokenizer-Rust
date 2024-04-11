@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::fmt::{Display, Formatter, write};
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, PartialEq)]
 pub enum CounterError {
@@ -8,6 +8,7 @@ pub enum CounterError {
     KeyError(String),
     ValueError(String),
     ByteDecodeError(String),
+    IOError(String),
 }
 
 impl Display for CounterError {
@@ -20,6 +21,7 @@ impl Display for CounterError {
             Self::ByteDecodeError(e) => write!(f,"Bytes decode failed due to {} \
             and select error handle method as 'strict'. \
             If you want to proceed the operation as-is, please use other method.", e),
+            Self::IOError(e) => write!(f, "Encounter I/O error due to {}", e),
         }
     }
 }
