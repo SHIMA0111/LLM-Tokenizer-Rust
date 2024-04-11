@@ -9,6 +9,7 @@ use crate::counter::openai::bpe::CoreBytePairEncoding;
 use crate::errors::CounterResult;
 
 mod openai;
+mod utils;
 
 pub trait Counter {
     fn count(&self) -> usize;

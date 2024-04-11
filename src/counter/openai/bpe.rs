@@ -80,8 +80,8 @@ pub(crate) struct CoreBytePairEncoding {
 
 impl CoreBytePairEncoding {
     pub(crate) fn new(encoder: HashMap<Vec<u8>, Rank>,
-           special_tokens_encoder: HashMap<String, Rank>,
-           pattern: &str
+                      special_tokens_encoder: HashMap<String, Rank>,
+                      pattern: &str
     ) -> CounterResult<Self> {
         let regex_obj = Regex::new(pattern)
             .map_err(|e| CounterError::RegexError(e.to_string()))?;
@@ -204,8 +204,8 @@ impl CoreBytePairEncoding {
     // Decoding
     // ===================
 
-    pub(crate) fn decode_bytes(&self, tokens: Vec<Rank>) -> Vec<u8> {
-        self.decode_native(&tokens)
+    pub(crate) fn decode_bytes(&self, tokens: &[Rank]) -> Vec<u8> {
+        self.decode_native(tokens)
     }
 
     pub(crate) fn decode_single_token_bytes(&self, token: Rank) -> CounterResult<Vec<u8>> {
