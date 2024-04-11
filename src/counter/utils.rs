@@ -235,3 +235,37 @@ fn from_utf8_or<'a>(v: &'a [u8], replace_bytes: &'a str) -> Cow<'a, str> {
 pub fn from_utf8_ignore(v: &[u8]) -> Cow<str> {
     from_utf8_or(v, "")
 }
+
+pub fn from_utf8_backslash(v: &[u8]) -> Cow<str> {
+    let mut iter = BytesChunks::new(v);
+
+    let (first_valid, invalid) = if let Some(chunk) = iter.next() {
+        let valid = chunk.valid();
+        if chunk.invalid().is_empty() {
+            debug_assert_eq!(valid.len(), v.len());
+            return Cow::Borrowed(valid)
+        }
+        (valid, chunk.invalid())
+    } else {
+        return Cow::Borrowed("")
+    };
+
+    let push_str_to_string = |bytes: &[u8], res_str: &mut String| {
+        for byte in bytes {
+            res_str.push_str(format!("\\x{:02X}", byte).as_str())
+        }
+    };
+
+    let mut res = String::with_capacity(v.len());
+    res.push_str(first_valid);
+    push_str_to_string(invalid, &mut res);
+
+    for chunk in iter {
+        res.push_str(chunk.valid());
+        if !chunk.invalid().is_empty() {
+            push_str_to_string(chunk.invalid(), &mut res);
+        }
+    }
+
+    Cow::Owned(res)
+}

@@ -4,7 +4,7 @@ use std::str::from_utf8;
 use regex::Regex;
 use rustc_hash::FxHashMap;
 use crate::counter::openai::bpe::CoreBytePairEncoding;
-use crate::counter::utils::from_utf8_ignore;
+use crate::counter::utils::{from_utf8_backslash, from_utf8_ignore};
 use crate::errors::{CounterError, CounterResult};
 
 pub(super) mod models;
@@ -31,11 +31,13 @@ pub enum SingleInput<'a> {
 /// When use 'Strict', the process raise error when encounter the decoding error.
 /// For 'Replace', the invalid bytes will be replaced with "\u{FFFD}", about 'Ignore',
 /// the invalid bytes will be ignored.
+/// If you select 'BackSlashReplace', the invalid each byte convert to escape sequence like '\xNN'.
 #[derive(Copy, Clone)]
 pub enum DecodeErrorHandler {
     Strict,
     Replace,
     Ignore,
+    BackSlashReplace,
 }
 
 /// OpenAI API tokenizer struct based on BPE(Byte Pair Encoding)
@@ -294,7 +296,8 @@ impl <'a> OpenAI<'a> {
                     DecodeErrorHandler::Replace => {
                         String::from_utf8_lossy(&bytes).to_string()
                     }
-                    DecodeErrorHandler::Ignore => from_utf8_ignore(&bytes).to_string()
+                    DecodeErrorHandler::Ignore => from_utf8_ignore(&bytes).to_string(),
+                    DecodeErrorHandler::BackSlashReplace => from_utf8_backslash(&bytes).to_string(),
                 }
             }
         };
