@@ -126,9 +126,9 @@ impl CoreBytePairEncoding {
         })
     }
 
-    // =========
+    // ===================
     // Encoding
-    // =========
+    // ===================
 
     pub(crate) fn encode_ordinary(&self, text: &str) -> Vec<Rank> {
         self.encode_ordinary_native(text)
@@ -200,9 +200,9 @@ impl CoreBytePairEncoding {
         }
     }
 
-    // =========
+    // ===================
     // Decoding
-    // =========
+    // ===================
 
     pub(crate) fn decode_bytes(&self, tokens: Vec<Rank>) -> Vec<u8> {
         self.decode_native(&tokens)
@@ -219,9 +219,9 @@ impl CoreBytePairEncoding {
         Err(CounterError::KeyError(token.to_string()))
     }
 
-    // ===============
+    // ===================
     // Miscellaneous
-    // ===============
+    // ===================
 
     pub(crate) fn token_byte_values(&self) -> Vec<Vec<u8>> {
         self.sorted_token_bytes
@@ -230,9 +230,9 @@ impl CoreBytePairEncoding {
             .collect::<Vec<Vec<_>>>()
     }
 
-    // =========
+    // ===================
     // Internal
-    // =========
+    // ===================
 
     fn decode_native(&self, tokens: &[Rank]) -> Vec<u8> {
         let mut ret = Vec::with_capacity(tokens.len() * 2);

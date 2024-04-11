@@ -74,9 +74,9 @@ impl <'a> OpenAI<'a> {
         })
     }
 
-    // ===========
+    // ===================
     // Encoding
-    // ===========
+    // ===================
 
     pub fn encode_ordinary(&self, text: &str) -> Vec<u32> {
         self.bpe_base.encode_ordinary(text)
@@ -84,9 +84,91 @@ impl <'a> OpenAI<'a> {
 
     pub fn encode(&self,
                   text: &str,
-                  allowed_special: Specials,
-                  disallowed_special: Specials
+                  allowed_special: Specials<'a>,
+                  disallowed_special: Specials<'a>
     ) -> CounterResult<Vec<u32>> {
+        let allowed_special =
+            self.validation_specials(text,
+                                     allowed_special.clone(),
+                                     disallowed_special)?;
+
+        Ok(self.bpe_base.encode(text, allowed_special))
+    }
+
+    pub fn encode_ordinary_batch(&self, text: &[&str]) -> Vec<Vec<u32>> {
+        text.iter().map(|str| self.bpe_base.encode_ordinary(str)).collect::<Vec<_>>()
+    }
+
+    pub fn encode_batch(&self,
+                        text: &[&str],
+                        allowed_special: Specials<'a>,
+                        disallowed_special: Specials<'a>
+    ) -> CounterResult<Vec<Vec<u32>>> {
+        let mut tokens = Vec::new();
+        for str in text {
+            tokens.push(
+                self.encode(str, allowed_special.clone(), disallowed_special.clone())?);
+        }
+
+        Ok(tokens)
+    }
+
+    pub fn encode_with_unstable(&self,
+                                text: &str,
+                                allowed_special: Specials<'a>,
+                                disallowed_special: Specials<'a>
+    ) -> CounterResult<(Vec<u32>, Vec<Vec<u32>>)> {
+        let allowed_special =
+            self.validation_specials(text,
+                                     allowed_special.clone(),
+                                     disallowed_special)?;
+
+        Ok(self.bpe_base.encode_with_unstable(text, allowed_special))
+    }
+
+    pub fn encode_single_token(&self, text_or_bytes: SingleToken) -> CounterResult<u32> {
+        match text_or_bytes {
+            SingleToken::String(str) => {
+                let bytes = str.as_bytes();
+                self.bpe_base.encode_single_token(bytes)
+            }
+            SingleToken::Bytes(bytes) => {
+                self.bpe_base.encode_single_token(bytes)
+            }
+        }
+    }
+
+    // ===================
+    // Decoding
+    // ===================
+
+    // ===================
+    // Miscellaneous
+    // ===================
+
+    /// Returns the list of all token byte values.
+    pub fn token_bytes_values(&self) -> Vec<Vec<u8>> {
+        self.bpe_base.token_byte_values()
+    }
+
+    pub fn end_of_text_token(&self) -> u32 {
+        self.special_token["<|endoftext|>"]
+    }
+
+    pub fn special_tokens_set(&self) -> HashSet<&str> {
+        self.special_token.keys().map(|key| key.as_str()).collect::<HashSet<_>>()
+    }
+
+    /// For backwards compatibility.
+    pub fn n_vocab(&self) -> u32 {
+        self.max_token_value + 1
+    }
+
+    fn validation_specials(&'a self,
+                           text: &str,
+                           allowed_special: Specials<'a>,
+                           disallowed_special: Specials<'a>
+    ) -> CounterResult<HashSet<&'a str>> {
         let allowed_special = match allowed_special {
             Specials::All => self.special_tokens_set(),
             Specials::Collection(allowed_specials) => {
@@ -131,48 +213,7 @@ impl <'a> OpenAI<'a> {
                     ))
             }
         }
-
-        Ok(self.bpe_base.encode(text, allowed_special))
-    }
-
-    pub fn encode_ordinary_batch(&self, text: &[&str]) -> Vec<Vec<u32>> {
-        text.iter().map(|str| self.bpe_base.encode_ordinary(str)).collect::<Vec<_>>()
-    }
-
-    pub fn encode_batch(&self,
-                        text: &[&str],
-                        allowed_special: Specials,
-                        disallowed_special: Specials
-    ) -> CounterResult<Vec<Vec<u32>>> {
-        let mut tokens = Vec::new();
-        for str in text {
-            tokens.push(
-                self.encode(str, allowed_special.clone(), disallowed_special.clone())?);
-        }
-
-        Ok(tokens)
-    }
-
-    // ===================
-    // Miscellaneous
-    // ===================
-
-    /// Returns the list of all token byte values.
-    pub fn token_bytes_values(&self) -> Vec<Vec<u8>> {
-        self.bpe_base.token_byte_values()
-    }
-
-    pub fn end_of_text_token(&self) -> u32 {
-        self.special_token["<|endoftext|>"]
-    }
-
-    pub fn special_tokens_set(&self) -> HashSet<&str> {
-        self.special_token.keys().map(|key| key.as_str()).collect::<HashSet<_>>()
-    }
-
-    /// For backwards compatibility.
-    pub fn n_vocab(&self) -> u32 {
-        self.max_token_value + 1
+        Ok(allowed_special)
     }
 }
 
