@@ -9,6 +9,7 @@ pub enum CounterError {
     ValueError(String),
     ByteDecodeError(String),
     IOError(String),
+    Base64DecodeError(String),
 }
 
 impl Display for CounterError {
@@ -22,6 +23,7 @@ impl Display for CounterError {
             and select error handle method as 'strict'. \
             If you want to proceed the operation as-is, please use other method.", e),
             Self::IOError(e) => write!(f, "Encounter I/O error due to {}", e),
+            Self::Base64DecodeError(e) => write!(f, "BASE64 decode failed due to {}", e),
         }
     }
 }

@@ -252,7 +252,7 @@ pub fn from_utf8_backslash(v: &[u8]) -> Cow<str> {
 
     let push_str_to_string = |bytes: &[u8], res_str: &mut String| {
         for byte in bytes {
-            res_str.push_str(format!("\\x{:02X}", byte).as_str())
+            res_str.push_str(format!("\\x{:02x}", byte).as_str())
         }
     };
 
