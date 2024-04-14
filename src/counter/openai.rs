@@ -10,6 +10,7 @@ use crate::errors::{CounterError, CounterResult};
 pub(super) mod models;
 pub(super) mod load;
 pub(super) mod bpe;
+mod registry;
 
 /// When encode text, you can specify special characters as allowed or disallowed.
 /// In the OpenAI encode methods, `allowed_special` is preferred so both of allowed and disallowed
