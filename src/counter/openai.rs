@@ -11,6 +11,7 @@ pub(super) mod models;
 pub(super) mod load;
 pub(super) mod bpe;
 mod registry;
+mod openai_sets;
 
 /// When encode text, you can specify special characters as allowed or disallowed.
 /// In the OpenAI encode methods, `allowed_special` is preferred so both of allowed and disallowed
@@ -41,13 +42,21 @@ pub enum DecodeErrorHandler {
     BackSlashReplace,
 }
 
+pub(crate) struct OpenAIInput<'a> {
+    name: &'a str,
+    pattern: &'a str,
+    merge_able_ranks: HashMap<Vec<u8>, u32>,
+    special_tokens: HashMap<String, u32>,
+    explicit_n_vocab: Option<u32>,
+}
+
 /// OpenAI API tokenizer struct based on BPE(Byte Pair Encoding)
 /// This code based on the tiktoken (https://github.com/openai/tiktoken)
 /// But current implementation doesn't support parallel execution.
 pub(crate) struct OpenAI<'a> {
     name: &'a str,
     pattern: &'a str,
-    merge_ranks: FxHashMap<Vec<u8>, u32>,
+    merge_able_ranks: FxHashMap<Vec<u8>, u32>,
     special_token: FxHashMap<String, u32>,
     max_token_value: u32,
     bpe_base: CoreBytePairEncoding,
@@ -60,7 +69,7 @@ impl <'a> OpenAI<'a> {
     ///
     /// * `name` - The name of the tokenizer.
     /// * `pattern_str` - The pattern string used for tokenization.
-    /// * `merge_ranks` - A `HashMap` mapping byte sequences to merge ranks.
+    /// * `merge_able_ranks` - A `HashMap` mapping byte sequences to merge ranks.
     /// * `special_tokens` - A `HashMap` mapping special tokens to ids.
     /// * `explicit_n_vocab` - An optional explicit number of vocabulary tokens.
     ///
@@ -69,12 +78,12 @@ impl <'a> OpenAI<'a> {
     /// Returns a `CounterResult` that resolves to an `OpenAI` tokenizer on success.
     /// Otherwise, returns a `CounterError`.
     pub fn new(name: &'a str,
-           pattern_str: &'a str,
-           merge_ranks: HashMap<Vec<u8>, u32>,
-           special_tokens: HashMap<String, u32>,
-           explicit_n_vocab: Option<u32>
+               pattern_str: &'a str,
+               merge_able_ranks: HashMap<Vec<u8>, u32>,
+               special_tokens: HashMap<String, u32>,
+               explicit_n_vocab: Option<u32>
     ) -> CounterResult<OpenAI<'a>> {
-        let fx_ranks = FxHashMap::from_iter(merge_ranks);
+        let fx_ranks = FxHashMap::from_iter(merge_able_ranks);
         let fx_special_tokens = FxHashMap::from_iter(special_tokens);
 
         let max_merge_ranks = match fx_ranks.values().max() {
@@ -105,7 +114,7 @@ impl <'a> OpenAI<'a> {
         Ok(Self {
             name,
             pattern: pattern_str,
-            merge_ranks: fx_ranks,
+            merge_able_ranks: fx_ranks,
             special_token: fx_special_tokens,
             max_token_value,
             bpe_base: bpe,
@@ -498,6 +507,20 @@ impl <'a> OpenAI<'a> {
             }
         }
         Ok(allowed_special)
+    }
+}
+
+impl <'a> TryFrom<OpenAIInput<'a>> for OpenAI <'a> {
+    type Error = CounterError;
+
+    fn try_from(value: OpenAIInput<'a>) -> Result<OpenAI<'a>, Self::Error> {
+        Self::new(
+            value.name,
+            value.pattern,
+            value.merge_able_ranks,
+            value.special_tokens,
+            value.explicit_n_vocab,
+        )
     }
 }
 
