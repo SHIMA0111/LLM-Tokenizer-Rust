@@ -11,7 +11,7 @@ fn byte_pair_merge(ranks: &HashMap<Vec<u8>, Rank>, piece: &[u8]) -> Vec<(usize, 
 
     let mut min_rank: (Rank, usize) = (Rank::MAX, usize::MAX);
     for i in 0..piece.len() - 1 {
-        let rank = *ranks.get(&piece[i..=i + 1]).unwrap_or(&Rank::MAX);
+        let rank = *ranks.get(&piece[i..i + 2]).unwrap_or(&Rank::MAX);
         if rank < min_rank.0 {
             min_rank = (rank, i)
         }
@@ -24,7 +24,7 @@ fn byte_pair_merge(ranks: &HashMap<Vec<u8>, Rank>, piece: &[u8]) -> Vec<(usize, 
     let get_rank = {
         |parts: &Vec<(usize, Rank)>, i: usize| {
             if (i + 3) < parts.len() {
-                *ranks.get(&piece[parts[i].0..=parts[i + 2].0])
+                *ranks.get(&piece[parts[i].0..parts[i + 3].0])
                     .unwrap_or(&Rank::MAX)
             } else {
                 Rank::MAX
@@ -135,7 +135,8 @@ impl CoreBytePairEncoding {
     }
 
     pub(crate) fn encode(&self, text: &str, allowed_special: HashSet<&str>) -> Vec<Rank> {
-        self.encode_native(text, &allowed_special).0
+        let tokens = self.encode_native(text, &allowed_special);
+        tokens.0
     }
 
     fn encode_bytes(&self, bytes: &[u8]) -> Vec<Rank> {

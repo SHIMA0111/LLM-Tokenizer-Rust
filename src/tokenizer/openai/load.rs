@@ -103,7 +103,10 @@ pub fn read_cached_file(blobpath: &str, expected_hash: Option<&str>) -> CounterR
     }
 
     create_dir_all(cache_dir).map_err(|e| CounterError::IOError(e.to_string()))?;
-    let temp_file_name = cache_path.join(format!(".{}.tmp", Uuid::new_v4().to_string()));
+
+    let tmp_filename = format!("{}.{}.tmp", cache_path.to_str().unwrap(), Uuid::new_v4().to_string());
+
+    let temp_file_name = Path::new(&tmp_filename);
     match File::create(temp_file_name.clone()) {
         Ok(mut file) => {
             file.write_all(&contents).map_err(|e| CounterError::IOError(e.to_string()))?;

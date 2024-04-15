@@ -1,3 +1,5 @@
+use crate::tokenizer::openai::OpenAI;
+use crate::tokenizer::openai::openai_sets::Models;
 use crate::errors::{CounterError, CounterResult};
 
 const MODEL_PREFIX_TO_CL100K_BASE: [&str; 7] = [
@@ -97,4 +99,27 @@ pub fn encoding_name_for_model(model_name: &str) -> CounterResult<String> {
     Ok(encoding_name.to_string())
 }
 
+pub fn encoding_for_model(model_name: &str) -> CounterResult<OpenAI> {
+    let encoding_name = encoding_name_for_model(model_name)?;
+    let model = Models::try_from(encoding_name)?;
+    let input = model.get_input()?;
 
+    OpenAI::try_from(input)
+}
+
+mod test {
+    use crate::tokenizer::openai::models::encoding_for_model;
+    use crate::tokenizer::openai::Specials;
+
+    #[test]
+    fn test_encoding() {
+
+        let text = "GMOアドマーケティング";
+        let encoder = encoding_for_model("gpt-4").unwrap();
+        let tokens = encoder.encode(text, Specials::Collection(&[]), Specials::All).unwrap();
+        let token_count = tokens.len();
+
+        eprintln!("{:?}", tokens);
+        assert_eq!(token_count, 10)
+    }
+}

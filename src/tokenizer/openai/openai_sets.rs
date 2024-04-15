@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use crate::counter::openai::load::{data_gym_to_mergeable_bpe_ranks, load_bpe};
-use crate::counter::openai::OpenAIInput;
+use crate::tokenizer::openai::load::{data_gym_to_mergeable_bpe_ranks, load_bpe};
+use crate::tokenizer::openai::OpenAIInput;
 use crate::errors::{CounterError, CounterResult};
 
 const ENDOFTEXT: &str = "<|endoftext|>";
@@ -20,7 +20,7 @@ pub enum Models {
 }
 
 impl Models {
-    pub fn get_input(&self) -> CounterResult<OpenAIInput<'_>> {
+    pub fn get_input(&self) -> CounterResult<OpenAIInput> {
         match self {
             Self::GPT2 => {
                 let merge_able_ranks = data_gym_to_mergeable_bpe_ranks(
@@ -31,8 +31,8 @@ impl Models {
                 )?;
 
                 Ok(OpenAIInput {
-                    name: "gpt2",
-                    pattern: r"'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+",
+                    name: "gpt2".to_string(),
+                    pattern: r"'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+".to_string(),
                     merge_able_ranks,
                     special_tokens: [(ENDOFTEXT.to_string(), 50256)].iter().cloned().collect(),
                     explicit_n_vocab: Some(50257),
@@ -45,8 +45,8 @@ impl Models {
                 )?;
 
                 Ok(OpenAIInput {
-                    name: "r50k_base",
-                    pattern: r"'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+",
+                    name: "r50k_base".to_string(),
+                    pattern: r"'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+".to_string(),
                     merge_able_ranks,
                     special_tokens: [(ENDOFTEXT.to_string(), 50256)].iter().cloned().collect(),
                     explicit_n_vocab: Some(50257),
@@ -59,8 +59,8 @@ impl Models {
                 )?;
 
                 Ok(OpenAIInput {
-                    name: "p50k_base",
-                    pattern: r"'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+",
+                    name: "p50k_base".to_string(),
+                    pattern: r"'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+".to_string(),
                     merge_able_ranks,
                     special_tokens: [(ENDOFTEXT.to_string(), 50256)].iter().cloned().collect(),
                     explicit_n_vocab: Some(50281),
@@ -80,8 +80,8 @@ impl Models {
                 ].iter().cloned().collect::<HashMap<_, u32>>();
 
                 Ok(OpenAIInput {
-                    name: "p50k_edit",
-                    pattern: r"'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+",
+                    name: "p50k_edit".to_string(),
+                    pattern: r"'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+".to_string(),
                     merge_able_ranks,
                     special_tokens,
                     explicit_n_vocab: None,
@@ -102,8 +102,8 @@ impl Models {
                 ].iter().cloned().collect::<HashMap<_, u32>>();
 
                 Ok(OpenAIInput {
-                    name: "cl100k_base",
-                    pattern: r"'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+",
+                    name: "cl100k_base".to_string(),
+                    pattern: r"'[sdmt]|ll|ve|re|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+[^(\w)]|\s+".to_string(),
                     merge_able_ranks,
                     special_tokens,
                     explicit_n_vocab: None,

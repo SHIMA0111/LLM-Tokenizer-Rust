@@ -3,14 +3,13 @@ use std::collections::{HashMap, HashSet};
 use std::str::from_utf8;
 use regex::Regex;
 use rustc_hash::FxHashMap;
-use crate::counter::openai::bpe::CoreBytePairEncoding;
-use crate::counter::utils::{from_utf8_backslash, from_utf8_ignore};
+use crate::tokenizer::openai::bpe::CoreBytePairEncoding;
+use crate::tokenizer::utils::{from_utf8_backslash, from_utf8_ignore};
 use crate::errors::{CounterError, CounterResult};
 
 pub(super) mod models;
 pub(super) mod load;
 pub(super) mod bpe;
-mod registry;
 mod openai_sets;
 
 /// When encode text, you can specify special characters as allowed or disallowed.
@@ -42,9 +41,10 @@ pub enum DecodeErrorHandler {
     BackSlashReplace,
 }
 
-pub(crate) struct OpenAIInput<'a> {
-    name: &'a str,
-    pattern: &'a str,
+#[derive(Clone)]
+pub(crate) struct OpenAIInput {
+    name: String,
+    pattern: String,
     merge_able_ranks: HashMap<Vec<u8>, u32>,
     special_tokens: HashMap<String, u32>,
     explicit_n_vocab: Option<u32>,
@@ -53,16 +53,16 @@ pub(crate) struct OpenAIInput<'a> {
 /// OpenAI API tokenizer struct based on BPE(Byte Pair Encoding)
 /// This code based on the tiktoken (https://github.com/openai/tiktoken)
 /// But current implementation doesn't support parallel execution.
-pub(crate) struct OpenAI<'a> {
-    name: &'a str,
-    pattern: &'a str,
+pub(crate) struct OpenAI {
+    name: String,
+    pattern: String,
     merge_able_ranks: FxHashMap<Vec<u8>, u32>,
     special_token: FxHashMap<String, u32>,
     max_token_value: u32,
     bpe_base: CoreBytePairEncoding,
 }
 
-impl <'a> OpenAI<'a> {
+impl <'a> OpenAI {
     /// Constructs a new instance of `OpenAI` tokenizer.
     ///
     /// # Arguments
@@ -77,12 +77,12 @@ impl <'a> OpenAI<'a> {
     ///
     /// Returns a `CounterResult` that resolves to an `OpenAI` tokenizer on success.
     /// Otherwise, returns a `CounterError`.
-    pub fn new(name: &'a str,
-               pattern_str: &'a str,
+    pub fn new(name: String,
+               pattern_str: String,
                merge_able_ranks: HashMap<Vec<u8>, u32>,
                special_tokens: HashMap<String, u32>,
                explicit_n_vocab: Option<u32>
-    ) -> CounterResult<OpenAI<'a>> {
+    ) -> CounterResult<Self> {
         let fx_ranks = FxHashMap::from_iter(merge_able_ranks);
         let fx_special_tokens = FxHashMap::from_iter(special_tokens);
 
@@ -109,7 +109,7 @@ impl <'a> OpenAI<'a> {
         let bpe =
             CoreBytePairEncoding::new(fx_ranks.clone(),
                                       fx_special_tokens.clone(),
-                                      pattern_str)?;
+                                      &pattern_str)?;
 
         Ok(Self {
             name,
@@ -154,8 +154,8 @@ impl <'a> OpenAI<'a> {
     /// or an error message on failure on `CounterError`.
     pub fn encode(&self,
                   text: &str,
-                  allowed_special: Specials<'a>,
-                  disallowed_special: Specials<'a>
+                  allowed_special: Specials<'_>,
+                  disallowed_special: Specials<'_>
     ) -> CounterResult<Vec<u32>> {
         let allowed_special =
             self.validation_specials(text,
@@ -510,10 +510,10 @@ impl <'a> OpenAI<'a> {
     }
 }
 
-impl <'a> TryFrom<OpenAIInput<'a>> for OpenAI <'a> {
+impl <'a> TryFrom<OpenAIInput> for OpenAI {
     type Error = CounterError;
 
-    fn try_from(value: OpenAIInput<'a>) -> Result<OpenAI<'a>, Self::Error> {
+    fn try_from(value: OpenAIInput) -> Result<OpenAI, Self::Error> {
         Self::new(
             value.name,
             value.pattern,
